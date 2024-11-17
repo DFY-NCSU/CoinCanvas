@@ -1,8 +1,13 @@
 # CoinCanvas
+<p align="center">
+  <img src="assets/logo.png" alt="Project Logo" width="200">
+</p>
 
 # 💡 A Smart Way to Track Your Expenses
 
 Our expense tracker software is designed to help you manage your finances more effectively. Whether you're a **young professional**, **student**, **family**, **freelancer**, **corporate team member**, **retiree**, **debt manager**, or **saver**, our tool offers comprehensive features to meet your unique financial needs.
+
+![](assets/intro.jpg)
 
 ## ✨ Key Features
 
