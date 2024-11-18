@@ -4,8 +4,10 @@ email_validator==2.2.0
 fastapi==0.104.1
 passlib==1.7.4
 pydantic==2.4.2
+pytest==8.3.3
 python-dotenv==1.0.0
 python-jose==3.3.0
 python-multipart==0.0.6
+requests==2.32.3
 sqlalchemy==2.0.23
 uvicorn==0.24.0
