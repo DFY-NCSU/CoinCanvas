@@ -1,14 +1,4 @@
-# element-plus-vite-starter
-
-> A starter kit for Element Plus with Vite
-
-- Preview: <https://vite-starter.element-plus.org>
-
-This is an example of on-demand element-plus with [unplugin-vue-components](https://github.com/antfu/unplugin-vue-components).
-
-> If you want to import all, it may be so simple that no examples are needed. Just follow [quickstart | Docs](https://element-plus.org/zh-CN/guide/quickstart.html) and import them.
-
-If you just want an on-demand import example `manually`, you can check [unplugin-element-plus/examples/vite](https://github.com/element-plus/unplugin-element-plus/tree/main/examples/vite).
+# Canvas-frontend Start
 
 ## Project setup
 
@@ -31,9 +21,8 @@ npm run build
 ## Usage
 
 ```bash
-git clone https://github.com/element-plus/element-plus-vite-starter
-cd element-plus-vite-starter
-npm i
+cd canvas-frontend
+npm install
 npm run dev
 ```
 
