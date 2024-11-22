@@ -3,7 +3,7 @@ name: Style checker
 on:
   push:
     branches:
-      - test/workflow
+      - workflow
   pull_request:
     branches:
       - main
