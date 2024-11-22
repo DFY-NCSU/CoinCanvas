@@ -4,11 +4,12 @@
 
 
 <!-- [![GitHub Release](https://img.shields.io/badge/release-v6.0.11.1-blue)](https://github.com/DFY-NCSU/CoinCanvas) -->
+[![Backend Tests & Coverage](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/test_backend.yml/badge.svg)](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/test_backend.yml)
+[![codecov](https://codecov.io/gh/DFY-NCSU/CoinCanvas/branch/dev/graph/badge.svg?token=oJrKEnEGwP)](https://codecov.io/gh/DFY-NCSU/CoinCanvas/tree/dev)
 [![Flake8 Lint](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/flake8.yml/badge.svg)](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/flake8.yml)
 [![Syntax Check](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/syntax.yml/badge.svg)](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/syntax.yml)
 [![Python Style Checker](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/style.yml/badge.svg)](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/style.yml)
-[![Python Application](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/python-app.yml/badge.svg)](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/python-app.yml)
-[![codecov](https://codecov.io/gh/DFY-NCSU/CoinCanvas/branch/main/graph/badge.svg?token=oJrKEnEGwP)](https://codecov.io/gh/DFY-NCSU/CoinCanvas/tree/main)
+<!-- [![codecov](https://codecov.io/gh/DFY-NCSU/CoinCanvas/branch/main/graph/badge.svg?token=oJrKEnEGwP)](https://codecov.io/gh/DFY-NCSU/CoinCanvas/tree/main) -->
 
 <a href="https://github.com/DFY-NCSU/CoinCanvas/blob/main/LICENSE"><img alt="GitHub license" src="https://img.shields.io/github/license/DFY-NCSU/CoinCanvas"></a>
 <a href="https://github.com/DFY-NCSU/CoinCanvas/forks"><img alt="GitHub forks" src="https://img.shields.io/github/forks/DFY-NCSU/CoinCanvas"></a>
