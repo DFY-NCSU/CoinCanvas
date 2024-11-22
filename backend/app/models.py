@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from .database import Base
 from datetime import datetime
 
+
 class User(Base):
     __tablename__ = "users"
 
@@ -11,6 +12,7 @@ class User(Base):
     hashed_password = Column(String)
     full_name = Column(String)
     expenses = relationship("Expense", back_populates="owner")
+
 
 class Expense(Base):
     __tablename__ = "expenses"

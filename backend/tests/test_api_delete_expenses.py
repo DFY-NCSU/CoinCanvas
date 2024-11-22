@@ -11,9 +11,10 @@ logger = logging.getLogger(__name__)
 # Configuration
 BASE_URL = "http://127.0.0.1:8000"
 
+
 class TestDeleteExpense:
     """Test expense deletion operations"""
-    
+
     @pytest.fixture
     def test_user(self) -> Dict:
         """Fixture for test user credentials"""
@@ -22,13 +23,13 @@ class TestDeleteExpense:
             "password": "testpassword123",
             "full_name": "Test Expense Delete User"
         }
-    
+
     @pytest.fixture
     def auth_token(self, test_user) -> str:
         """Fixture to create user and get auth token"""
         # Create test user
         requests.post(f"{BASE_URL}/users/", json=test_user)
-        
+
         # Get token
         response = requests.post(
             f"{BASE_URL}/token",
@@ -75,7 +76,7 @@ class TestDeleteExpense:
             headers=auth_headers
         )
         assert response.status_code == 200
-        
+
         # Verify expense is deleted
         get_response = requests.get(
             f"{BASE_URL}/expenses/{expense_id}",
@@ -135,14 +136,14 @@ class TestDeleteExpense:
     def test_double_delete(self, auth_headers, test_expense):
         """Test deleting the same expense twice"""
         expense_id, _ = test_expense
-        
+
         # First delete
         first_response = requests.delete(
             f"{BASE_URL}/expenses/{expense_id}",
             headers=auth_headers
         )
         assert first_response.status_code == 200
-        
+
         # Second delete
         second_response = requests.delete(
             f"{BASE_URL}/expenses/{expense_id}",
@@ -153,14 +154,14 @@ class TestDeleteExpense:
     def test_delete_and_verify_list(self, auth_headers, test_expense):
         """Test that deleted expense doesn't appear in expense list"""
         expense_id, expense_data = test_expense
-        
+
         # Delete expense
         delete_response = requests.delete(
             f"{BASE_URL}/expenses/{expense_id}",
             headers=auth_headers
         )
         assert delete_response.status_code == 200
-        
+
         # Get all expenses
         list_response = requests.get(
             f"{BASE_URL}/expenses/",
@@ -168,7 +169,7 @@ class TestDeleteExpense:
         )
         assert list_response.status_code == 200
         expenses = list_response.json()
-        
+
         # Verify deleted expense is not in list
         expense_ids = [expense["id"] for expense in expenses]
         assert expense_id not in expense_ids
@@ -207,6 +208,7 @@ class TestDeleteExpense:
             headers=auth_headers
         )
         assert response.status_code == 404
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--disable-warnings"])

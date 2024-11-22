@@ -11,9 +11,10 @@ logger = logging.getLogger(__name__)
 # Configuration
 BASE_URL = "http://127.0.0.1:8000"
 
+
 class TestRegister:
     """Test user-related endpoints"""
-    
+
     @pytest.fixture
     def test_user(self) -> Dict:
         return {
@@ -21,7 +22,7 @@ class TestRegister:
             "full_name": "name",
             "password": "pass"
         }
-    
+
     @pytest.fixture
     def created_user_response(self, test_user) -> Tuple[requests.Response, Dict]:
         """Fixture to create user and return both response and data"""
@@ -44,7 +45,7 @@ class TestRegister:
         # First creation
         first_response = requests.post(f"{BASE_URL}/users/", json=test_user)
         assert first_response.status_code == 200
-        
+
         # Second creation
         second_response = requests.post(f"{BASE_URL}/users/", json=test_user)
         assert second_response.status_code == 400
@@ -65,7 +66,7 @@ class TestRegister:
         invalid_user["email"] = invalid_email
         response = requests.post(f"{BASE_URL}/users/", json=invalid_user)
         assert response.status_code == 422
-        
+
     def test_missing_email(self, test_user):
         """Test user creation with missing email"""
         invalid_user = test_user.copy()
@@ -106,17 +107,17 @@ class TestRegister:
         response = requests.post(f"{BASE_URL}/users/", json=test_user)
         assert response.status_code == 200
         data = response.json()
-        
+
         # Check required fields
         required_fields = ["email", "full_name", "id"]
         for field in required_fields:
             assert field in data
-            
+
         # Verify data types
         assert isinstance(data["id"], int)
         assert isinstance(data["email"], str)
         assert isinstance(data["full_name"], str)
-        
+
         # Verify values
         assert data["email"] == test_user["email"]
         assert data["full_name"] == test_user["full_name"]
@@ -142,6 +143,7 @@ class TestRegister:
         test_user["full_name"] = "a" * 100
         response = requests.post(f"{BASE_URL}/users/", json=test_user)
         assert response.status_code == 200
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

@@ -10,9 +10,10 @@ logger = logging.getLogger(__name__)
 # Configuration
 BASE_URL = "http://127.0.0.1:8000"
 
+
 class TestLogin:
     """Test token-related endpoints"""
-    
+
     @pytest.fixture
     def test_user(self) -> Dict:
         """Fixture for test user credentials"""
@@ -21,7 +22,7 @@ class TestLogin:
             "password": "testpassword123",
             "full_name": "Test Token User"
         }
-    
+
     @pytest.fixture(autouse=True)
     def setup_test_user(self, test_user):
         """Create test user if doesn't exist"""
@@ -58,7 +59,7 @@ class TestLogin:
             headers={"Content-Type": "application/x-www-form-urlencoded"}
         )
         assert response.status_code == 401
-        
+
     def test_invalid_username(self, test_user):
         """Test token generation with invalid username"""
         response = requests.post(
@@ -192,18 +193,18 @@ class TestLogin:
         )
         assert response.status_code == 200
         data = response.json()
-        
+
         # Check required fields
         assert "access_token" in data
         assert "token_type" in data
-        
+
         # Check data types
         assert isinstance(data["access_token"], str)
         assert isinstance(data["token_type"], str)
-        
+
         # Check token format (assuming JWT)
         assert len(data["access_token"].split('.')) == 3
-        
+
         # Check token type
         assert data["token_type"].lower() == "bearer"
 

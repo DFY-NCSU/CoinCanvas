@@ -11,6 +11,7 @@ router = APIRouter(
     tags=["expenses"]
 )
 
+
 @router.get("/", response_model=List[schemas.Expense])
 async def read_expenses(
     skip: int = 0,
@@ -27,7 +28,7 @@ async def read_expenses(
     Get all expenses with optional filtering parameters
     """
     query = db.query(models.Expense).filter(models.Expense.user_id == current_user.id)
-    
+
     if category:
         query = query.filter(models.Expense.category == category)
     if start_date:
@@ -38,8 +39,9 @@ async def read_expenses(
         query = query.filter(models.Expense.amount >= min_amount)
     if max_amount:
         query = query.filter(models.Expense.amount <= max_amount)
-    
+
     return query.offset(skip).limit(limit).all()
+
 
 @router.post("/", response_model=schemas.Expense)
 async def create_expense(
@@ -51,6 +53,7 @@ async def create_expense(
     Create a new expense
     """
     return crud.create_expense(db=db, expense=expense, user_id=current_user.id)
+
 
 @router.get("/{expense_id}", response_model=schemas.Expense)
 async def read_expense(
@@ -69,6 +72,7 @@ async def read_expense(
         raise HTTPException(status_code=404, detail="Expense not found")
     return expense
 
+
 @router.put("/{expense_id}", response_model=schemas.Expense)
 async def update_expense(
     expense_id: int,
@@ -83,16 +87,17 @@ async def update_expense(
         models.Expense.id == expense_id,
         models.Expense.user_id == current_user.id
     ).first()
-    
+
     if db_expense is None:
         raise HTTPException(status_code=404, detail="Expense not found")
-    
+
     for key, value in expense_update.dict().items():
         setattr(db_expense, key, value)
-    
+
     db.commit()
     db.refresh(db_expense)
     return db_expense
+
 
 @router.delete("/{expense_id}")
 async def delete_expense(
@@ -107,13 +112,14 @@ async def delete_expense(
         models.Expense.id == expense_id,
         models.Expense.user_id == current_user.id
     ).first()
-    
+
     if db_expense is None:
         raise HTTPException(status_code=404, detail="Expense not found")
-    
+
     db.delete(db_expense)
     db.commit()
     return {"message": "Expense deleted successfully"}
+
 
 @router.get("/statistics/summary")
 async def get_expense_statistics(
@@ -125,7 +131,7 @@ async def get_expense_statistics(
     Get expense statistics summary
     """
     now = datetime.utcnow()
-    
+
     if timeframe == "day":
         start_date = now - timedelta(days=1)
     elif timeframe == "week":
@@ -134,17 +140,17 @@ async def get_expense_statistics(
         start_date = now - timedelta(days=30)
     else:  # year
         start_date = now - timedelta(days=365)
-    
+
     expenses = db.query(models.Expense).filter(
         models.Expense.user_id == current_user.id,
         models.Expense.date >= start_date
     ).all()
-    
+
     total_amount = sum(expense.amount for expense in expenses)
     category_breakdown = {}
     for expense in expenses:
         category_breakdown[expense.category] = category_breakdown.get(expense.category, 0) + expense.amount
-    
+
     return {
         "timeframe": timeframe,
         "total_expenses": len(expenses),
