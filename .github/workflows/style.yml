@@ -1,0 +1,19 @@
+name: Style checker
+
+on:
+  push:
+    branches:
+      - test/workflow
+  pull_request:
+    branches:
+      - main
+      - dev
+
+permissions:
+  contents: read
+  
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: andymckay/pycodestyle-action@0.1.3

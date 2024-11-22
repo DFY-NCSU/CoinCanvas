@@ -1,0 +1,20 @@
+name: Syntax checker
+
+on:
+  push:
+    branches:
+      - workflow
+  pull_request:
+    branches:
+      - main
+      - dev
+
+permissions:
+  contents: read
+  
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cclauss/Find-Python-syntax-errors-action@master
