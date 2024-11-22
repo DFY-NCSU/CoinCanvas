@@ -1,6 +1,29 @@
-# CoinCanvas
 <p align="center">
-  <img src="assets/logo.png" alt="Project Logo" width="200">
+  <img src="assets/logo.png" alt="Project Logo" width="500">
+</p>
+
+
+<!-- [![GitHub Release](https://img.shields.io/badge/release-v6.0.11.1-blue)](https://github.com/DFY-NCSU/CoinCanvas) -->
+[![Flake8 Lint](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/flake8.yml/badge.svg)](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/flake8.yml)
+[![Syntax Check](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/syntax.yml/badge.svg)](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/syntax.yml)
+[![Python Style Checker](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/style.yml/badge.svg)](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/style.yml)
+[![Python Application](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/python-app.yml/badge.svg)](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/python-app.yml)
+[![codecov](https://codecov.io/gh/DFY-NCSU/CoinCanvas/branch/main/graph/badge.svg?token=oJrKEnEGwP)](https://codecov.io/gh/DFY-NCSU/CoinCanvas/tree/main)
+
+<a href="https://github.com/DFY-NCSU/CoinCanvas/blob/main/LICENSE"><img alt="GitHub license" src="https://img.shields.io/github/license/DFY-NCSU/CoinCanvas"></a>
+<a href="https://github.com/DFY-NCSU/CoinCanvas/forks"><img alt="GitHub forks" src="https://img.shields.io/github/forks/DFY-NCSU/CoinCanvas"></a>
+<a href="https://github.com/DFY-NCSU/CoinCanvas/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/DFY-NCSU/CoinCanvas"></a>
+<a href="https://github.com/DFY-NCSU/CoinCanvas/issues"><img alt="GitHub issues" src="https://img.shields.io/github/issues/DFY-NCSU/CoinCanvas"></a>
+<a href="https://github.com/DFY-NCSU/CoinCanvas/issues?q=is%3Aissue+is%3Aclosed"><img alt="GitHub closed issues" src="https://img.shields.io/github/issues-closed/DFY-NCSU/CoinCanvas">
+<a href="https://github.com/DFY-NCSU/CoinCanvas/pulls"><img alt="GitHub pull requests" src="https://img.shields.io/github/issues-pr/DFY-NCSU/CoinCanvas">
+<a href="https://github.com/DFY-NCSU/CoinCanvas/pulls?q=is%3Apr+is%3Aclosed"><img alt="GitHub closed pull requests" src="https://img.shields.io/github/issues-pr-closed/DFY-NCSU/CoinCanvas">
+<a href="https://github.com/DFY-NCSU/CoinCanvas/discussions"><img alt="GitHub discussion channel" src="https://img.shields.io/github/discussions/DFY-NCSU/CoinCanvas">
+
+
+<p align="center">
+    <a href="https://github.com/DFY-NCSU/CoinCanvas/issues/new?assignees=&labels=&projects=&template=bug_report.md&title=">Report Bug</a>
+    ·
+    <a href="https://github.com/DFY-NCSU/CoinCanvas/issues/new?assignees=&labels=&projects=&template=feature_request.md&title=">Request Feature</a>
 </p>
 
 # 💡 A Smart Way to Track Your Expenses
@@ -8,6 +31,20 @@
 Our expense tracker software is designed to help you manage your finances more effectively. Whether you're a **young professional**, **student**, **family**, **freelancer**, **corporate team member**, **retiree**, **debt manager**, or **saver**, our tool offers comprehensive features to meet your unique financial needs.
 
 ![](assets/intro.jpg)
+
+:rocket: Usage
+
+### Backend
+
+1. Install the dependencies:
+```bash
+pip install -r backend/requirements.txt
+```
+
+2. Start the server:
+```bash
+uvicorn backend.app.main:app --reload
+```
 
 ## ✨ Key Features
 
