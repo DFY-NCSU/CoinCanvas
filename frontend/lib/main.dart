@@ -26,7 +26,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Track Ur Tab',
+      title: 'CoinCanvas',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         brightness: Brightness.light,
