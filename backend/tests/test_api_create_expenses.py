@@ -1,7 +1,7 @@
 import pytest
 import requests
 import logging
-from typing import Dict, Tuple
+from typing import Dict
 import time
 
 # Configure logging
@@ -11,9 +11,10 @@ logger = logging.getLogger(__name__)
 # Configuration
 BASE_URL = "http://127.0.0.1:8000"
 
+
 class TestCreateExpense:
     """Test expense-related endpoints"""
-    
+
     @pytest.fixture
     def test_user(self) -> Dict:
         """Fixture for test user credentials"""
@@ -22,13 +23,13 @@ class TestCreateExpense:
             "password": "testpassword123",
             "full_name": "Test Expense User"
         }
-    
+
     @pytest.fixture(autouse=True)
     def auth_token(self, test_user) -> str:
         """Fixture to create user and get auth token"""
         # Create test user
         requests.post(f"{BASE_URL}/users/", json=test_user)
-        
+
         # Get token
         response = requests.post(
             f"{BASE_URL}/token",
@@ -202,6 +203,7 @@ class TestCreateExpense:
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--disable-warnings"])

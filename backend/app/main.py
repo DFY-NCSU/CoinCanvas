@@ -48,12 +48,14 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+
 def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
@@ -73,6 +75,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         raise credentials_exception
     return user
 
+
 @app.post("/token")
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = crud.get_user_by_email(db, form_data.username)
@@ -85,12 +88,14 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     access_token = create_access_token(data={"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
+
 @app.post("/users/", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     return crud.create_user(db=db, user=user)
+
 
 @app.get("/expenses/", response_model=List[schemas.Expense])
 def read_expenses(
@@ -102,6 +107,7 @@ def read_expenses(
     expenses = crud.get_expenses(db, user_id=current_user.id, skip=skip, limit=limit)
     return expenses
 
+
 @app.post("/expenses/", response_model=schemas.Expense)
 def create_expense(
     expense: schemas.ExpenseCreate,
@@ -109,6 +115,7 @@ def create_expense(
     current_user: models.User = Depends(get_current_user)
 ):
     return crud.create_expense(db=db, expense=expense, user_id=current_user.id)
+
 
 @app.delete("/expenses/{expense_id}")
 def delete_expense(
@@ -120,6 +127,7 @@ def delete_expense(
     if expense is None:
         raise HTTPException(status_code=404, detail="Expense not found")
     return {"message": "Expense deleted successfully"}
+
 
 if __name__ == "__main__":
     import uvicorn
