@@ -5,15 +5,17 @@ class Expense {
   final double amount;
   final String description;
   final String paymentMethod;
+  final int? userId;
 
   Expense({
     this.id,
-    required this.date,
+    DateTime? date,
     required this.category,
     required this.amount,
     required this.description,
     required this.paymentMethod,
-  });
+    this.userId,
+  }) : date = date ?? DateTime.now();
 
   factory Expense.fromJson(Map<String, dynamic> json) {
     return Expense(
@@ -23,13 +25,13 @@ class Expense {
       amount: double.parse(json['amount'].toString()),
       description: json['description'] ?? '',
       paymentMethod: json['payment_method'],
+      userId: json['user_id'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'date': date.toIso8601String(),
+      'date': date.toIso8601String(),  // Include date in JSON
       'category': category,
       'amount': amount,
       'description': description,
