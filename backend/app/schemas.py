@@ -1,13 +1,13 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, constr, confloat
 from datetime import datetime
 from typing import Optional
 
 
 class ExpenseBase(BaseModel):
-    category: str
-    amount: float
+    category: constr(min_length=1)  # Non-empty string
+    amount: confloat(ge=0)  # Must be greater than or equal to 0
     description: Optional[str] = None
-    payment_method: str
+    payment_method: constr(min_length=1)  # Non-empty string
 
 
 class ExpenseCreate(ExpenseBase):
@@ -25,11 +25,11 @@ class Expense(ExpenseBase):
 
 class UserBase(BaseModel):
     email: EmailStr
-    full_name: str
+    full_name: constr(min_length=1)  # Non-empty string
 
 
 class UserCreate(UserBase):
-    password: str
+    password: constr(min_length=1)  # Non-empty string
 
 
 class User(UserBase):
