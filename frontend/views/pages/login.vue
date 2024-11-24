@@ -33,7 +33,7 @@
                     <el-checkbox class="pwd-checkbox" v-model="checked" label="Remeber Password" />
                     <el-link type="primary" @click="$router.push('/reset-pwd')">Forgot?</el-link>
                 </div>
-                <el-button class="login-btn" type="primary" size="large" @click="submitForm(login)">登录</el-button>
+                <el-button class="login-btn" type="primary" size="large" @click="submitForm(login)">Login</el-button>
 <!--                <p class="login-tips">Tips : 用户名和密码随便填。</p>-->
                 <p class="login-text">
                     No account？<el-link type="primary" @click="$router.push('/register')">Submit Now</el-link>
