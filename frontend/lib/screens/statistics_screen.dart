@@ -12,10 +12,9 @@ class StatisticsScreen extends StatefulWidget {
 
 class _StatisticsScreenState extends State<StatisticsScreen> {
   final ApiService _apiService = ApiService();
-  bool _isLoading = true;
   List<Expense> _expenses = [];
+  bool _isLoading = true;
   String _selectedTimeFrame = 'Month';
-  String _selectedChart = 'Category';
 
   @override
   void initState() {
@@ -24,25 +23,20 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     try {
       final expenses = await _apiService.getExpenses();
-      setState(() {
-        _expenses = expenses;
-        _isLoading = false;
-      });
+      setState(() => _expenses = expenses);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading statistics: $e')),
         );
       }
-      setState(() {
-        _isLoading = false;
-      });
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -66,10 +60,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildTimeFrameSelector(),
-                  const SizedBox(height: 16),
-                  _buildChartTypeSelector(),
                   const SizedBox(height: 24),
-                  _buildChart(),
+                  _buildPieChart(),
                   const SizedBox(height: 24),
                   _buildSummaryCards(),
                 ],
@@ -94,22 +86,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  Widget _buildChartTypeSelector() {
-    return SegmentedButton<String>(
-      segments: const [
-        ButtonSegment(value: 'Category', label: Text('Category')),
-        ButtonSegment(value: 'Trend', label: Text('Trend')),
-      ],
-      selected: {_selectedChart},
-      onSelectionChanged: (Set<String> newSelection) {
-        setState(() {
-          _selectedChart = newSelection.first;
-        });
-      },
-    );
-  }
-
-  Widget _buildChart() {
+  Widget _buildPieChart() {
     if (_expenses.isEmpty) {
       return const Card(
         child: Padding(
@@ -122,79 +99,52 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       );
     }
 
+    final Map<String, double> categoryExpenses = {};
+    for (var expense in _expenses) {
+      categoryExpenses.update(
+        expense.category,
+        (value) => value + expense.amount,
+        ifAbsent: () => expense.amount,
+      );
+    }
+
+    final totalExpense = categoryExpenses.values.reduce((a, b) => a + b);
+
     return SizedBox(
       height: 300,
-      child: _selectedChart == 'Category'
-          ? _buildPieChart()
-          : _buildLineChart(),
-    );
-  }
-
-  Widget _buildPieChart() {
-    final categoryExpenses = _getCategoryExpenses();
-    final totalExpense = categoryExpenses.values.fold(0.0, (a, b) => a + b);
-
-    return PieChart(
-      PieChartData(
-        sections: categoryExpenses.entries.map((entry) {
-          final percentage = (entry.value / totalExpense) * 100;
-          return PieChartSectionData(
-            color: _getCategoryColor(entry.key),
-            value: entry.value,
-            title: '${percentage.toStringAsFixed(1)}%',
-            radius: 150,
-            titleStyle: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          );
-        }).toList(),
-        sectionsSpace: 0,
-      ),
-    );
-  }
-
-  Widget _buildLineChart() {
-    final dailyExpenses = _getDailyExpenses();
-    
-    return LineChart(
-      LineChartData(
-        gridData: FlGridData(show: true),
-        titlesData: FlTitlesData(
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 40,
-            ),
-          ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 30,
-            ),
-          ),
+      child: PieChart(
+        PieChartData(
+          sections: categoryExpenses.entries.map((entry) {
+            final percentage = (entry.value / totalExpense) * 100;
+            return PieChartSectionData(
+              color: _getCategoryColor(entry.key),
+              value: entry.value,
+              title: '${percentage.toStringAsFixed(1)}%',
+              radius: 150,
+              titleStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            );
+          }).toList(),
+          sectionsSpace: 0,
         ),
-        borderData: FlBorderData(show: true),
-        lineBarsData: [
-          LineChartBarData(
-            spots: dailyExpenses.entries.mapIndexed((index, entry) {
-              return FlSpot(index.toDouble(), entry.value);
-            }).toList(),
-            isCurved: true,
-            color: Theme.of(context).primaryColor,
-            barWidth: 3,
-            dotData: FlDotData(show: true),
-          ),
-        ],
       ),
     );
   }
 
   Widget _buildSummaryCards() {
-    final totalExpense = _expenses.fold(0.0, (sum, expense) => sum + expense.amount);
+    if (_expenses.isEmpty) return const SizedBox.shrink();
+
+    final totalExpense = _expenses.fold<double>(
+      0,
+      (sum, expense) => sum + expense.amount,
+    );
     final averageExpense = totalExpense / _expenses.length;
-    final maxExpense = _expenses.map((e) => e.amount).reduce((a, b) => a > b ? a : b);
+    final maxExpense = _expenses
+        .map((e) => e.amount)
+        .reduce((a, b) => a > b ? a : b);
 
     return Row(
       children: [
@@ -240,35 +190,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         ),
       ),
     );
-  }
-
-  Map<String, double> _getCategoryExpenses() {
-    final categoryExpenses = <String, double>{};
-    for (var expense in _expenses) {
-      categoryExpenses.update(
-        expense.category,
-        (value) => value + expense.amount,
-        ifAbsent: () => expense.amount,
-      );
-    }
-    return categoryExpenses;
-  }
-
-  Map<DateTime, double> _getDailyExpenses() {
-    final dailyExpenses = <DateTime, double>{};
-    for (var expense in _expenses) {
-      final date = DateTime(
-        expense.date.year,
-        expense.date.month,
-        expense.date.day,
-      );
-      dailyExpenses.update(
-        date,
-        (value) => value + expense.amount,
-        ifAbsent: () => expense.amount,
-      );
-    }
-    return dailyExpenses;
   }
 
   Color _getCategoryColor(String category) {
