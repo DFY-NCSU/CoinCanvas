@@ -3,6 +3,7 @@ import requests
 import logging
 from typing import Dict
 import time
+from datetime import datetime, timezone
 
 # Configure logging
 logging.basicConfig(level=logging.ERROR)
@@ -53,7 +54,9 @@ class TestCreateExpense:
     @pytest.fixture
     def valid_expense(self) -> Dict:
         """Fixture for valid expense data"""
+        current_time = datetime.now(timezone.utc).isoformat()
         return {
+            "date": current_time,  # ISO 8601 format with timezone
             "category": "Food",
             "amount": 25.50,
             "payment_method": "Credit Card",
@@ -73,8 +76,8 @@ class TestCreateExpense:
         assert float(data["amount"]) == valid_expense["amount"]
         assert data["payment_method"] == valid_expense["payment_method"]
         assert data["description"] == valid_expense["description"]
-        assert "id" in data
         assert "date" in data
+        assert "id" in data
 
     def test_create_expense_without_description(self, auth_headers, valid_expense):
         """Test expense creation without optional description"""
@@ -106,7 +109,7 @@ class TestCreateExpense:
         )
         assert response.status_code == 401
 
-    @pytest.mark.parametrize("field", ["category", "amount", "payment_method"])
+    @pytest.mark.parametrize("field", ["date", "category", "amount", "payment_method"])
     def test_missing_required_fields(self, auth_headers, valid_expense, field):
         """Test expense creation with missing required fields"""
         invalid_expense = valid_expense.copy()
@@ -128,6 +131,28 @@ class TestCreateExpense:
             headers=auth_headers
         )
         assert response.status_code == 422
+
+    def test_invalid_date_format(self, auth_headers, valid_expense):
+        """Test expense creation with invalid date format"""
+        invalid_expense = valid_expense.copy()
+        invalid_expense["date"] = "not-a-date"
+        response = requests.post(
+            f"{BASE_URL}/expenses/",
+            json=invalid_expense,
+            headers=auth_headers
+        )
+        assert response.status_code == 422
+
+    def test_future_date(self, auth_headers, valid_expense):
+        """Test expense creation with future date"""
+        future_date = datetime(2025, 12, 31, 12, 0, tzinfo=timezone.utc).isoformat()
+        valid_expense["date"] = future_date
+        response = requests.post(
+            f"{BASE_URL}/expenses/",
+            json=valid_expense,
+            headers=auth_headers
+        )
+        assert response.status_code == 200  # Assuming future dates are allowed
 
     def test_negative_amount(self, auth_headers, valid_expense):
         """Test expense creation with negative amount"""

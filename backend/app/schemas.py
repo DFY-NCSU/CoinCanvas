@@ -8,6 +8,7 @@ class ExpenseBase(BaseModel):
     amount: confloat(ge=0)  # Must be greater than or equal to 0
     description: Optional[str] = None
     payment_method: constr(min_length=1)  # Non-empty string
+    date: datetime
 
 
 class ExpenseCreate(ExpenseBase):
