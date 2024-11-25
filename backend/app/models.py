@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from .database import Base
-# from datetime import datetime
+from datetime import datetime
 
 
 class User(Base):
@@ -14,14 +14,20 @@ class User(Base):
     expenses = relationship("Expense", back_populates="owner")
 
 
-class Expense(Base):
-    __tablename__ = "expenses"
+# Common base class for expense attributes
+class ExpenseBase(Base):
+    __abstract__ = True
 
     id = Column(Integer, primary_key=True, index=True)
-    date = Column(DateTime)
+    date = Column(DateTime, nullable=False)
     category = Column(String, index=True)
     amount = Column(Float)
     description = Column(String)
+
+
+class Expense(ExpenseBase):
+    __tablename__ = "expenses"
+
     payment_method = Column(String)
     user_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="expenses")
@@ -52,16 +58,11 @@ class GroupMember(Base):
     group = relationship("Group", back_populates="members")
 
 
-class GroupExpense(Base):
+class GroupExpense(ExpenseBase):
     __tablename__ = "group_expenses"
 
-    id = Column(Integer, primary_key=True, index=True)
     group_id = Column(Integer, ForeignKey("groups.id"))
     paid_by = Column(Integer, ForeignKey("users.id"))
-    amount = Column(Float)
-    category = Column(String)
-    description = Column(String)
-    date = Column(DateTime, default=datetime.utcnow)
 
     splits = relationship("ExpenseSplit", back_populates="expense")
     group = relationship("Group", back_populates="expenses")

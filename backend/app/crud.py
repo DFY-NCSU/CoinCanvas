@@ -1,3 +1,5 @@
+from datetime import datetime
+# from typing import Optional
 from sqlalchemy.orm import Session
 from . import models, schemas
 from passlib.context import CryptContext
@@ -59,21 +61,37 @@ def get_expenses(db: Session, user_id: int, skip: int = 0, limit: int = 100):
              .all()
 
 
-def create_expense(db: Session, expense: schemas.ExpenseCreate, user_id: int):
-    # Additional validation for amount and empty strings
-    if expense.amount < 0:
+def validate_expense_data(amount: float, category: str, date: datetime):
+    if amount < 0:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Amount must be positive"
         )
-    if not expense.category.strip() or not expense.payment_method.strip():
+    if not category.strip():
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Category and payment method cannot be empty"
+            detail="Category cannot be empty"
+        )
+    if not date:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Date is required"
+        )
+
+    return date
+
+
+def create_expense(db: Session, expense: schemas.ExpenseCreate, user_id: int):
+    date = validate_expense_data(expense.amount, expense.category, expense.date)
+
+    if not expense.payment_method.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Payment method cannot be empty"
         )
 
     db_expense = models.Expense(
-        date=expense.date,  # Use the date from the request
+        date=date,
         category=expense.category,
         amount=expense.amount,
         description=expense.description,
@@ -123,6 +141,8 @@ def join_group(db: Session, group_id: int, user_id: int):
 
 
 def create_group_expense(db: Session, group_id: int, expense: schemas.GroupExpenseCreate, paid_by: int):
+    date = validate_expense_data(expense.amount, expense.category, expense.date)
+
     group = db.query(models.Group).filter(models.Group.id == group_id).first()
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
@@ -130,6 +150,7 @@ def create_group_expense(db: Session, group_id: int, expense: schemas.GroupExpen
     db_expense = models.GroupExpense(
         group_id=group.id,
         paid_by=paid_by,
+        date=date,
         amount=expense.amount,
         category=expense.category,
         description=expense.description
@@ -145,9 +166,18 @@ def create_group_expense(db: Session, group_id: int, expense: schemas.GroupExpen
             )
             db_expense.splits.append(split)
     else:
+        if not expense.custom_splits:
+            raise HTTPException(
+                status_code=400,
+                detail="Custom splits required when split_type is not 'equal'"
+            )
+
         total_percentage = sum(expense.custom_splits.values())
         if not abs(total_percentage - 100) < 0.01:
-            raise HTTPException(status_code=400, detail="Split percentages must sum to 100")
+            raise HTTPException(
+                status_code=400,
+                detail="Split percentages must sum to 100"
+            )
 
         for user_id, percentage in expense.custom_splits.items():
             split = models.ExpenseSplit(

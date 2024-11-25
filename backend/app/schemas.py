@@ -3,12 +3,16 @@ from datetime import datetime
 from typing import Optional
 
 
-class ExpenseBase(BaseModel):
-    category: constr(min_length=1)  # Non-empty string
-    amount: confloat(ge=0)  # Must be greater than or equal to 0
+# Common base class for expense schemas
+class ExpenseSchemaBase(BaseModel):
+    category: constr(min_length=1)
+    amount: confloat(ge=0)
     description: Optional[str] = None
-    payment_method: constr(min_length=1)  # Non-empty string
     date: datetime
+
+
+class ExpenseBase(ExpenseSchemaBase):
+    payment_method: constr(min_length=1)
 
 
 class ExpenseCreate(ExpenseBase):
@@ -68,12 +72,9 @@ class ExpenseSplit(ExpenseSplitBase):
         from_attributes = True  # Updated from orm_mode
 
 
-class GroupExpenseBase(BaseModel):
-    amount: confloat(gt=0)
-    category: constr(min_length=1)
-    description: Optional[str] = None
-    split_type: str = "equal"  # "equal" or "custom"
-    custom_splits: Optional[dict[int, float]] = None  # user_id: percentage
+class GroupExpenseBase(ExpenseSchemaBase):
+    split_type: str = "equal"
+    custom_splits: Optional[dict[int, float]] = None
 
 
 class GroupExpenseCreate(GroupExpenseBase):
