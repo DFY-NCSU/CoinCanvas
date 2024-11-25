@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 import '../models/expense.dart';
 import '../services/api_service.dart';
 
@@ -40,34 +41,52 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Statistics'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildTimeFrameSelector(),
-                  const SizedBox(height: 24),
-                  _buildPieChart(),
-                  const SizedBox(height: 24),
-                  _buildSummaryCards(),
-                ],
-              ),
-            ),
-    );
+  List<Expense> _getFilteredExpenses() {
+    final now = DateTime.now();
+    final filteredExpenses = _expenses.where((expense) {
+      final expenseDate = expense.date;
+      switch (_selectedTimeFrame) {
+        case 'Week':
+          // Get the start of the current week (Monday)
+          final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+          final startOfWeekDate = DateTime(
+            startOfWeek.year, 
+            startOfWeek.month, 
+            startOfWeek.day,
+          );
+          return expenseDate.isAfter(startOfWeekDate.subtract(const Duration(days: 1))) &&
+                 expenseDate.isBefore(now.add(const Duration(days: 1)));
+        
+        case 'Month':
+          // Get expenses from the current month
+          return expenseDate.year == now.year && 
+                 expenseDate.month == now.month;
+        
+        case 'Year':
+          // Get expenses from the current year
+          return expenseDate.year == now.year;
+        
+        default:
+          return true;
+      }
+    }).toList();
+
+    return filteredExpenses;
+  }
+
+  Map<String, double> _getCategoryExpenses() {
+    final filteredExpenses = _getFilteredExpenses();
+    final categoryExpenses = <String, double>{};
+    
+    for (var expense in filteredExpenses) {
+      categoryExpenses.update(
+        expense.category,
+        (value) => value + expense.amount,
+        ifAbsent: () => expense.amount,
+      );
+    }
+    
+    return categoryExpenses;
   }
 
   Widget _buildTimeFrameSelector() {
@@ -87,24 +106,17 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Widget _buildPieChart() {
-    if (_expenses.isEmpty) {
-      return const Card(
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
+    final categoryExpenses = _getCategoryExpenses();
+    
+    if (categoryExpenses.isEmpty) {
+      return SizedBox(
+        height: 300,
+        child: Center(
           child: Text(
-            'No expenses recorded yet',
-            textAlign: TextAlign.center,
+            'No expenses in selected ${_selectedTimeFrame.toLowerCase()}',
+            style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
-      );
-    }
-
-    final Map<String, double> categoryExpenses = {};
-    for (var expense in _expenses) {
-      categoryExpenses.update(
-        expense.category,
-        (value) => value + expense.amount,
-        ifAbsent: () => expense.amount,
       );
     }
 
@@ -119,7 +131,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             return PieChartSectionData(
               color: _getCategoryColor(entry.key),
               value: entry.value,
-              title: '${percentage.toStringAsFixed(1)}%',
+              title: '${percentage.toStringAsFixed(1)}%\n${entry.key}',
               radius: 150,
               titleStyle: const TextStyle(
                 fontSize: 12,
@@ -135,33 +147,46 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Widget _buildSummaryCards() {
-    if (_expenses.isEmpty) return const SizedBox.shrink();
+    final filteredExpenses = _getFilteredExpenses();
+    
+    if (filteredExpenses.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
-    final totalExpense = _expenses.fold<double>(
+    final totalExpense = filteredExpenses.fold<double>(
       0,
       (sum, expense) => sum + expense.amount,
     );
-    final averageExpense = totalExpense / _expenses.length;
-    final maxExpense = _expenses
+    final averageExpense = totalExpense / filteredExpenses.length;
+    final maxExpense = filteredExpenses
         .map((e) => e.amount)
         .reduce((a, b) => a > b ? a : b);
 
-    return Row(
+    return Column(
       children: [
-        _buildSummaryCard(
-          'Total',
-          '\$${totalExpense.toStringAsFixed(2)}',
-          Icons.account_balance_wallet,
+        Text(
+          'Summary for current ${_selectedTimeFrame.toLowerCase()}',
+          style: Theme.of(context).textTheme.titleMedium,
         ),
-        _buildSummaryCard(
-          'Average',
-          '\$${averageExpense.toStringAsFixed(2)}',
-          Icons.trending_up,
-        ),
-        _buildSummaryCard(
-          'Highest',
-          '\$${maxExpense.toStringAsFixed(2)}',
-          Icons.arrow_upward,
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            _buildSummaryCard(
+              'Total',
+              '\$${totalExpense.toStringAsFixed(2)}',
+              Icons.account_balance_wallet,
+            ),
+            _buildSummaryCard(
+              'Average',
+              '\$${averageExpense.toStringAsFixed(2)}',
+              Icons.trending_up,
+            ),
+            _buildSummaryCard(
+              'Highest',
+              '\$${maxExpense.toStringAsFixed(2)}',
+              Icons.arrow_upward,
+            ),
+          ],
         ),
       ],
     );
@@ -204,5 +229,35 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       'Other': Colors.grey,
     };
     return colors[category] ?? Colors.grey;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Statistics'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadData,
+          ),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildTimeFrameSelector(),
+                  const SizedBox(height: 24),
+                  _buildPieChart(),
+                  const SizedBox(height: 24),
+                  _buildSummaryCards(),
+                ],
+              ),
+            ),
+    );
   }
 }

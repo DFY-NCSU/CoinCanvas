@@ -49,6 +49,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   ];
 
   Future<void> _selectDate(BuildContext context) async {
+    final ThemeData theme = Theme.of(context);
+    final bool isDarkMode = theme.brightness == Brightness.dark;
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
@@ -57,13 +60,27 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            dialogBackgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            colorScheme: ColorScheme.light(
-              primary: Theme.of(context).primaryColor,
-              onPrimary: Colors.white,
-              surface: Theme.of(context).scaffoldBackgroundColor,
-              onSurface: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
+            colorScheme: isDarkMode
+                ? const ColorScheme.dark(
+                    primary: Colors.blue, // Primary color for selection
+                    onPrimary: Colors.white, // Text color on primary
+                    surface: Color(0xFF303030), // Background color
+                    onSurface: Colors.white, // Regular text color
+                    secondaryContainer: Colors.blue, // Selected item background
+                  )
+                : const ColorScheme.light(
+                    primary: Colors.blue,
+                    onPrimary: Colors.white,
+                    surface: Colors.white,
+                    onSurface: Colors.black,
+                    secondaryContainer: Colors.blue,
+                  ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: isDarkMode ? Colors.white : Colors.blue, // Button text color
+              ),
             ),
+            dialogBackgroundColor: isDarkMode ? const Color(0xFF303030) : Colors.white,
           ),
           child: child!,
         );
