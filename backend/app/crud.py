@@ -72,7 +72,14 @@ def create_expense(db: Session, expense: schemas.ExpenseCreate, user_id: int):
             detail="Category and payment method cannot be empty"
         )
 
-    db_expense = models.Expense(**expense.dict(), user_id=user_id)
+    db_expense = models.Expense(
+        date=expense.date,  # Use the date from the request
+        category=expense.category,
+        amount=expense.amount,
+        description=expense.description,
+        payment_method=expense.payment_method,
+        user_id=user_id
+    )
     db.add(db_expense)
     db.commit()
     db.refresh(db_expense)
