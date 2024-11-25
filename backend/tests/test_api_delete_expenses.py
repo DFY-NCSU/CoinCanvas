@@ -3,6 +3,7 @@ import requests
 import logging
 import time
 from typing import Dict, Tuple
+from datetime import datetime, timezone
 
 # Configure logging
 logging.basicConfig(level=logging.ERROR)
@@ -54,6 +55,7 @@ class TestDeleteExpense:
     def test_expense(self, auth_headers) -> Tuple[int, Dict]:
         """Fixture to create a test expense and return its ID"""
         expense_data = {
+            "date": datetime.now(timezone.utc).isoformat(),  # Added required date field
             "category": "Test Category",
             "amount": 50.0,
             "payment_method": "Credit Card",

@@ -10,6 +10,7 @@ class ExpenseBase(BaseModel):
     payment_method: constr(min_length=1)  # Non-empty string
     date: datetime
 
+
 class ExpenseCreate(ExpenseBase):
     pass
 
