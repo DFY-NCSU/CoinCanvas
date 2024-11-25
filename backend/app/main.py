@@ -129,6 +129,91 @@ def delete_expense(
     return {"message": "Expense deleted successfully"}
 
 
+@app.post("/groups/", response_model=schemas.Group)
+def create_group(
+    group: schemas.GroupCreate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    return crud.create_group(db, group.name, current_user.id)
+
+
+@app.post("/groups/{group_id}/join")
+def join_group(
+    group_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    return crud.join_group(db, group_id, current_user.id)
+
+
+@app.get("/groups/", response_model=list[schemas.Group])
+def list_user_groups(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """List all groups that the current user is a member of"""
+    return crud.get_user_groups(db, current_user.id, skip=skip, limit=limit)
+
+
+@app.post("/groups/{group_id}/expenses", response_model=schemas.GroupExpense)
+def create_group_expense(
+    group_id: int,
+    expense: schemas.GroupExpenseCreate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    return crud.create_group_expense(db, group_id, expense, current_user.id)
+
+
+@app.get("/groups/{group_id}/expenses/", response_model=list[schemas.GroupExpense])
+def list_group_expenses(
+    group_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    return crud.get_group_expenses(
+        db,
+        group_id=group_id,
+        user_id=current_user.id,
+        skip=skip,
+        limit=limit
+    )
+
+
+@app.delete("/groups/{group_id}/expenses/{expense_id}")
+def delete_group_expense(
+    group_id: int,
+    expense_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    return crud.delete_group_expense(
+        db,
+        group_id=group_id,
+        expense_id=expense_id,
+        user_id=current_user.id
+    )
+
+
+# Added a new endpoint to search groups by name
+@app.get("/groups/search/", response_model=list[schemas.Group])
+def search_groups(
+    name: str,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    """Search for groups by name (case-insensitive partial match)"""
+    return db.query(models.Group).filter(
+        models.Group.name.ilike(f"%{name}%")
+    ).offset(skip).limit(limit).all()
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
