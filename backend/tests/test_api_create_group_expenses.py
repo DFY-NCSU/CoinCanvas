@@ -1,76 +1,78 @@
 import pytest
-import requests
-import logging
+from fastapi.testclient import TestClient
 from typing import Dict, List
-import time
+import logging
 from datetime import datetime, timezone
+
+from app.main import app
 
 # Configure logging
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
-
-# Configuration
-BASE_URL = "http://127.0.0.1:8000"
 
 
 class TestGroupExpenses:
     """Test group expense-related endpoints"""
 
     @pytest.fixture
+    def client(self):
+        """Fixture for TestClient"""
+        return TestClient(app)
+
+    @pytest.fixture
     def test_users(self) -> List[Dict]:
         """Fixture for multiple test user credentials"""
         return [
             {
-                "email": f"test_group_expense_{i}_{time.time()}@example.com",
+                "email": f"test_group_expense_{i}@example.com",
                 "password": "testpassword123",
                 "full_name": f"Test Group Expense User {i}"
             } for i in range(3)  # Create 3 test users
         ]
 
-    @pytest.fixture
-    def auth_tokens(self, test_users) -> List[str]:
-        """Fixture to create users and get their auth tokens"""
-        tokens = []
+    @pytest.fixture(autouse=True)
+    def setup_test_users(self, client, test_users):
+        """Create test users if they don't exist"""
         for user in test_users:
-            # Create test user
-            requests.post(f"{BASE_URL}/users/", json=user)
+            response = client.post("/users/", json=user)
+            if response.status_code not in (200, 400):  # 400 means user exists
+                pytest.fail(f"Failed to setup test user: {response.text}")
 
-            # Get token
-            response = requests.post(
-                f"{BASE_URL}/token",
+    @pytest.fixture
+    def auth_headers_list(self, client, test_users) -> List[Dict]:
+        """Fixture for authorization headers for all users"""
+        headers_list = []
+        for user in test_users:
+            response = client.post(
+                "/token",
                 data={
                     "username": user["email"],
-                    "password": user["password"]
+                    "password": user["password"],
+                    "grant_type": "password"
                 },
                 headers={"Content-Type": "application/x-www-form-urlencoded"}
             )
             assert response.status_code == 200, f"Failed to get auth token for {user['email']}"
-            tokens.append(response.json()["access_token"])
-        return tokens
-
-    @pytest.fixture
-    def auth_headers_list(self, auth_tokens) -> List[Dict]:
-        """Fixture for authorization headers for all users"""
-        return [
-            {
+            token = response.json()["access_token"]
+            headers_list.append({
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json"
-            } for token in auth_tokens
-        ]
+            })
+        return headers_list
 
     @pytest.fixture
     def test_group(self) -> Dict:
         """Fixture for test group data"""
         return {
-            "name": f"Test Expense Group {time.time()}"
+            "name": "Test Expense Group"
         }
 
     @pytest.fixture
-    def created_group(self, auth_headers_list, test_group) -> Dict:
+    def created_group(self, client, auth_headers_list, test_group) -> Dict:
         """Fixture to create a test group and add all users to it"""
         # Create group with first user
-        response = requests.post(
-            f"{BASE_URL}/groups/",
+        response = client.post(
+            "/groups/",
             json=test_group,
             headers=auth_headers_list[0]
         )
@@ -79,8 +81,8 @@ class TestGroupExpenses:
 
         # Add other users to the group
         for headers in auth_headers_list[1:]:
-            join_response = requests.post(
-                f"{BASE_URL}/groups/{group_data['id']}/join",
+            join_response = client.post(
+                f"/groups/{group_data['id']}/join",
                 headers=headers
             )
             assert join_response.status_code == 200
@@ -99,7 +101,7 @@ class TestGroupExpenses:
         }
 
     @pytest.fixture
-    def valid_custom_split_expense(self, test_users) -> Dict:
+    def valid_custom_split_expense(self) -> Dict:
         """Fixture for valid expense with custom split"""
         return {
             "date": datetime.now(timezone.utc).isoformat(),
@@ -115,11 +117,11 @@ class TestGroupExpenses:
         }
 
     def test_create_equal_split_expense_success(
-        self, auth_headers_list, created_group, valid_equal_split_expense
+        self, client, auth_headers_list, created_group, valid_equal_split_expense
     ):
         """Test successful creation of equally split expense"""
-        response = requests.post(
-            f"{BASE_URL}/groups/{created_group['id']}/expenses",
+        response = client.post(
+            f"/groups/{created_group['id']}/expenses",
             json=valid_equal_split_expense,
             headers=auth_headers_list[0]
         )
@@ -134,11 +136,11 @@ class TestGroupExpenses:
             assert abs(float(split["amount"]) - expected_split_amount) < 0.01
 
     def test_create_custom_split_expense_success(
-        self, auth_headers_list, created_group, valid_custom_split_expense
+        self, client, auth_headers_list, created_group, valid_custom_split_expense
     ):
         """Test successful creation of custom split expense"""
-        response = requests.post(
-            f"{BASE_URL}/groups/{created_group['id']}/expenses",
+        response = client.post(
+            f"/groups/{created_group['id']}/expenses",
             json=valid_custom_split_expense,
             headers=auth_headers_list[0]
         )
@@ -154,39 +156,41 @@ class TestGroupExpenses:
             expected_amount = (user_percentage / 100) * valid_custom_split_expense["amount"]
             assert abs(float(split["amount"]) - expected_amount) < 0.01
 
-    def test_create_expense_unauthorized(self, created_group, valid_equal_split_expense):
+    def test_create_expense_unauthorized(
+        self, client, created_group, valid_equal_split_expense
+    ):
         """Test expense creation without authorization"""
-        response = requests.post(
-            f"{BASE_URL}/groups/{created_group['id']}/expenses",
+        response = client.post(
+            f"/groups/{created_group['id']}/expenses",
             json=valid_equal_split_expense
         )
         assert response.status_code == 401
 
     def test_create_expense_invalid_group(
-        self, auth_headers_list, valid_equal_split_expense
+        self, client, auth_headers_list, valid_equal_split_expense
     ):
         """Test creating expense for non-existent group"""
-        response = requests.post(
-            f"{BASE_URL}/groups/99999/expenses",
+        response = client.post(
+            "/groups/99999/expenses",
             json=valid_equal_split_expense,
             headers=auth_headers_list[0]
         )
         assert response.status_code == 404
 
     def test_create_expense_negative_amount(
-        self, auth_headers_list, created_group, valid_equal_split_expense
+        self, client, auth_headers_list, created_group, valid_equal_split_expense
     ):
         """Test expense creation with negative amount"""
         valid_equal_split_expense["amount"] = -100.00
-        response = requests.post(
-            f"{BASE_URL}/groups/{created_group['id']}/expenses",
+        response = client.post(
+            f"/groups/{created_group['id']}/expenses",
             json=valid_equal_split_expense,
             headers=auth_headers_list[0]
         )
         assert response.status_code == 422
 
     def test_create_custom_split_invalid_percentages(
-        self, auth_headers_list, created_group, valid_custom_split_expense
+        self, client, auth_headers_list, created_group, valid_custom_split_expense
     ):
         """Test custom split with invalid percentage total"""
         valid_custom_split_expense["custom_splits"] = {
@@ -194,23 +198,23 @@ class TestGroupExpenses:
             "2": 30,
             "3": 20
         }
-        response = requests.post(
-            f"{BASE_URL}/groups/{created_group['id']}/expenses",
+        response = client.post(
+            f"/groups/{created_group['id']}/expenses",
             json=valid_custom_split_expense,
             headers=auth_headers_list[0]
         )
         assert response.status_code == 400
 
     def test_create_custom_split_missing_users(
-        self, auth_headers_list, created_group, valid_custom_split_expense
+        self, client, auth_headers_list, created_group, valid_custom_split_expense
     ):
         """Test custom split with missing users"""
         valid_custom_split_expense["custom_splits"] = {
             "1": 70,  # Missing user 3
             "2": 30
         }
-        response = requests.post(
-            f"{BASE_URL}/groups/{created_group['id']}/expenses",
+        response = client.post(
+            f"/groups/{created_group['id']}/expenses",
             json=valid_custom_split_expense,
             headers=auth_headers_list[0]
         )
@@ -218,33 +222,32 @@ class TestGroupExpenses:
 
     @pytest.mark.parametrize("field", ["date", "category", "amount"])
     def test_create_expense_missing_required_fields(
-        self, auth_headers_list, created_group, valid_equal_split_expense, field
+        self, client, auth_headers_list, created_group, valid_equal_split_expense, field
     ):
         """Test expense creation with missing required fields"""
-        # required_fields = ["date", "category", "amount", "split_type"]
         invalid_expense = valid_equal_split_expense.copy()
         del invalid_expense[field]
-        response = requests.post(
-            f"{BASE_URL}/groups/{created_group['id']}/expenses",
+        response = client.post(
+            f"/groups/{created_group['id']}/expenses",
             json=invalid_expense,
             headers=auth_headers_list[0]
         )
         assert response.status_code == 422
 
     def test_create_expense_invalid_split_type(
-        self, auth_headers_list, created_group, valid_equal_split_expense
+        self, client, auth_headers_list, created_group, valid_equal_split_expense
     ):
         """Test expense creation with invalid split type"""
         valid_equal_split_expense["split_type"] = "invalid_type"
-        response = requests.post(
-            f"{BASE_URL}/groups/{created_group['id']}/expenses",
+        response = client.post(
+            f"/groups/{created_group['id']}/expenses",
             json=valid_equal_split_expense,
             headers=auth_headers_list[0]
         )
         assert response.status_code == 400
 
     def test_create_custom_split_zero_percentage(
-        self, auth_headers_list, created_group, valid_custom_split_expense
+        self, client, auth_headers_list, created_group, valid_custom_split_expense
     ):
         """Test custom split with zero percentage"""
         valid_custom_split_expense["custom_splits"] = {
@@ -252,42 +255,43 @@ class TestGroupExpenses:
             "2": 50,
             "3": 50
         }
-        response = requests.post(
-            f"{BASE_URL}/groups/{created_group['id']}/expenses",
+        response = client.post(
+            f"/groups/{created_group['id']}/expenses",
             json=valid_custom_split_expense,
             headers=auth_headers_list[0]
         )
         assert response.status_code == 200
 
     def test_create_expense_future_date(
-        self, auth_headers_list, created_group, valid_equal_split_expense
+        self, client, auth_headers_list, created_group, valid_equal_split_expense
     ):
         """Test expense creation with future date"""
         future_date = datetime(2025, 12, 31, 12, 0, tzinfo=timezone.utc).isoformat()
         valid_equal_split_expense["date"] = future_date
-        response = requests.post(
-            f"{BASE_URL}/groups/{created_group['id']}/expenses",
+        response = client.post(
+            f"/groups/{created_group['id']}/expenses",
             json=valid_equal_split_expense,
             headers=auth_headers_list[0]
         )
-        assert response.status_code == 200  # Assuming future dates are allowed
+        assert response.status_code == 200
 
     def test_create_expense_non_member(
-        self, auth_headers_list, created_group, valid_equal_split_expense, test_users
+        self, client, created_group, valid_equal_split_expense
     ):
         """Test expense creation by non-group member"""
         # Create a new user who is not a member of the group
         new_user = {
-            "email": f"non_member_{time.time()}@example.com",
+            "email": "non_member@example.com",
             "password": "testpassword123",
             "full_name": "Non Member User"
         }
-        requests.post(f"{BASE_URL}/users/", json=new_user)
-        token_response = requests.post(
-            f"{BASE_URL}/token",
+        client.post("/users/", json=new_user)
+        token_response = client.post(
+            "/token",
             data={
                 "username": new_user["email"],
-                "password": new_user["password"]
+                "password": new_user["password"],
+                "grant_type": "password"
             },
             headers={"Content-Type": "application/x-www-form-urlencoded"}
         )
@@ -296,8 +300,8 @@ class TestGroupExpenses:
             "Content-Type": "application/json"
         }
 
-        response = requests.post(
-            f"{BASE_URL}/groups/{created_group['id']}/expenses",
+        response = client.post(
+            f"/groups/{created_group['id']}/expenses",
             json=valid_equal_split_expense,
             headers=non_member_headers
         )

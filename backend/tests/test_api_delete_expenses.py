@@ -1,68 +1,71 @@
 import pytest
-import requests
+from fastapi.testclient import TestClient
 import logging
-import time
 from typing import Dict, Tuple
 from datetime import datetime, timezone
+
+from app.main import app
 
 # Configure logging
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
-
-# Configuration
-BASE_URL = "http://127.0.0.1:8000"
 
 
 class TestDeleteExpense:
     """Test expense deletion operations"""
 
     @pytest.fixture
+    def client(self):
+        """Fixture for TestClient"""
+        return TestClient(app)
+
+    @pytest.fixture
     def test_user(self) -> Dict:
         """Fixture for test user credentials"""
         return {
-            "email": f"test_expense_delete_{time.time()}@example.com",
+            "email": "test_expense_delete@example.com",
             "password": "testpassword123",
             "full_name": "Test Expense Delete User"
         }
 
-    @pytest.fixture
-    def auth_token(self, test_user) -> str:
-        """Fixture to create user and get auth token"""
-        # Create test user
-        requests.post(f"{BASE_URL}/users/", json=test_user)
+    @pytest.fixture(autouse=True)
+    def setup_test_user(self, client, test_user):
+        """Create test user if doesn't exist"""
+        response = client.post("/users/", json=test_user)
+        if response.status_code not in (200, 400):  # 400 means user exists
+            pytest.fail(f"Failed to setup test user: {response.text}")
 
-        # Get token
-        response = requests.post(
-            f"{BASE_URL}/token",
+    @pytest.fixture
+    def auth_headers(self, client, test_user) -> Dict:
+        """Fixture for authorization headers"""
+        response = client.post(
+            "/token",
             data={
                 "username": test_user["email"],
-                "password": test_user["password"]
+                "password": test_user["password"],
+                "grant_type": "password"
             },
             headers={"Content-Type": "application/x-www-form-urlencoded"}
         )
         assert response.status_code == 200, "Failed to get auth token"
-        return response.json()["access_token"]
-
-    @pytest.fixture
-    def auth_headers(self, auth_token) -> Dict:
-        """Fixture for authorization headers"""
+        token = response.json()["access_token"]
         return {
-            "Authorization": f"Bearer {auth_token}",
+            "Authorization": f"Bearer {token}",
             "Content-Type": "application/json"
         }
 
     @pytest.fixture
-    def test_expense(self, auth_headers) -> Tuple[int, Dict]:
+    def test_expense(self, client, auth_headers) -> Tuple[int, Dict]:
         """Fixture to create a test expense and return its ID"""
         expense_data = {
-            "date": datetime.now(timezone.utc).isoformat(),  # Added required date field
+            "date": datetime.now(timezone.utc).isoformat(),
             "category": "Test Category",
             "amount": 50.0,
             "payment_method": "Credit Card",
             "description": "Test expense for deletion"
         }
-        response = requests.post(
-            f"{BASE_URL}/expenses/",
+        response = client.post(
+            "/expenses/",
             json=expense_data,
             headers=auth_headers
         )
@@ -70,103 +73,102 @@ class TestDeleteExpense:
         created_expense = response.json()
         return created_expense["id"], created_expense
 
-    def test_successful_delete(self, auth_headers, test_expense):
+    def test_successful_delete(self, client, auth_headers, test_expense):
         """Test successful expense deletion"""
         expense_id, _ = test_expense
-        response = requests.delete(
-            f"{BASE_URL}/expenses/{expense_id}",
+        response = client.delete(
+            f"/expenses/{expense_id}",
             headers=auth_headers
         )
         assert response.status_code == 200
 
         # Verify expense is deleted
-        get_response = requests.get(
-            f"{BASE_URL}/expenses/{expense_id}",
+        get_response = client.get(
+            f"/expenses/{expense_id}",
             headers=auth_headers
         )
         assert get_response.status_code == 405
 
-    def test_delete_nonexistent_expense(self, auth_headers):
+    def test_delete_nonexistent_expense(self, client, auth_headers):
         """Test deleting a non-existent expense ID"""
-        large_id = 999999999
-        response = requests.delete(
-            f"{BASE_URL}/expenses/{large_id}",
+        response = client.delete(
+            "/expenses/999999999",
             headers=auth_headers
         )
         assert response.status_code == 404
 
-    def test_delete_without_auth(self, test_expense):
+    def test_delete_without_auth(self, client, test_expense):
         """Test deleting without authorization"""
         expense_id, _ = test_expense
-        response = requests.delete(f"{BASE_URL}/expenses/{expense_id}")
+        response = client.delete(f"/expenses/{expense_id}")
         assert response.status_code == 401
 
-    def test_delete_invalid_token(self, test_expense):
+    def test_delete_invalid_token(self, client, test_expense):
         """Test deleting with invalid token"""
         expense_id, _ = test_expense
         headers = {"Authorization": "Bearer invalid_token"}
-        response = requests.delete(
-            f"{BASE_URL}/expenses/{expense_id}",
+        response = client.delete(
+            f"/expenses/{expense_id}",
             headers=headers
         )
         assert response.status_code == 401
 
-    def test_delete_negative_id(self, auth_headers):
+    def test_delete_negative_id(self, client, auth_headers):
         """Test deleting with negative ID"""
-        response = requests.delete(
-            f"{BASE_URL}/expenses/-1",
+        response = client.delete(
+            "/expenses/-1",
             headers=auth_headers
         )
-        assert response.status_code == 404  # Validation error
+        assert response.status_code == 404
 
-    def test_delete_zero_id(self, auth_headers):
+    def test_delete_zero_id(self, client, auth_headers):
         """Test deleting with zero ID"""
-        response = requests.delete(
-            f"{BASE_URL}/expenses/0",
+        response = client.delete(
+            "/expenses/0",
             headers=auth_headers
         )
-        assert response.status_code == 404  # Validation error
+        assert response.status_code == 404
 
-    def test_delete_invalid_id_type(self, auth_headers):
+    def test_delete_invalid_id_type(self, client, auth_headers):
         """Test deleting with invalid ID type"""
-        response = requests.delete(
-            f"{BASE_URL}/expenses/abc",
+        response = client.delete(
+            "/expenses/abc",
             headers=auth_headers
         )
-        assert response.status_code == 422  # Validation error
+        assert response.status_code == 422
 
-    def test_double_delete(self, auth_headers, test_expense):
+    def test_double_delete(self, client, auth_headers, test_expense):
         """Test deleting the same expense twice"""
         expense_id, _ = test_expense
 
         # First delete
-        first_response = requests.delete(
-            f"{BASE_URL}/expenses/{expense_id}",
+        first_response = client.delete(
+            f"/expenses/{expense_id}",
             headers=auth_headers
         )
         assert first_response.status_code == 200
 
         # Second delete
-        second_response = requests.delete(
-            f"{BASE_URL}/expenses/{expense_id}",
+        second_response = client.delete(
+            f"/expenses/{expense_id}",
             headers=auth_headers
         )
         assert second_response.status_code == 404
 
-    def test_delete_and_verify_list(self, auth_headers, test_expense):
+    def test_delete_and_verify_list(self, client, auth_headers, test_expense):
         """Test that deleted expense doesn't appear in expense list"""
-        expense_id, expense_data = test_expense
+        expense_id, _ = test_expense
 
         # Delete expense
-        delete_response = requests.delete(
-            f"{BASE_URL}/expenses/{expense_id}",
+        delete_response = client.delete(
+            f"/expenses/{expense_id}",
             headers=auth_headers
         )
         assert delete_response.status_code == 200
 
         # Get all expenses
-        list_response = requests.get(
-            f"{BASE_URL}/expenses/",
+        list_response = client.get(
+            "/expenses/",
             headers=auth_headers
         )
         assert list_response.status_code == 200
@@ -176,37 +178,36 @@ class TestDeleteExpense:
         expense_ids = [expense["id"] for expense in expenses]
         assert expense_id not in expense_ids
 
-    def test_delete_expense_id_float(self, auth_headers):
+    def test_delete_expense_id_float(self, client, auth_headers):
         """Test deleting with floating point ID"""
-        response = requests.delete(
-            f"{BASE_URL}/expenses/1.5",
+        response = client.delete(
+            "/expenses/1.5",
             headers=auth_headers
         )
         assert response.status_code == 422
 
-    def test_delete_expense_id_empty(self, auth_headers):
+    def test_delete_expense_id_empty(self, client, auth_headers):
         """Test deleting with empty ID"""
-        response = requests.delete(
-            f"{BASE_URL}/expenses/",
+        response = client.delete(
+            "/expenses/",
             headers=auth_headers
         )
-        assert response.status_code in [404, 405]  # Not Found or Method Not Allowed
+        assert response.status_code in [404, 405]
 
-    def test_delete_with_extra_params(self, auth_headers, test_expense):
+    def test_delete_with_extra_params(self, client, auth_headers, test_expense):
         """Test deleting with extra query parameters"""
         expense_id, _ = test_expense
-        response = requests.delete(
-            f"{BASE_URL}/expenses/{expense_id}?extra=param",
+        response = client.delete(
+            f"/expenses/{expense_id}?extra=param",
             headers=auth_headers
         )
-        # Should still work and ignore extra params
         assert response.status_code == 200
 
-    def test_delete_very_large_id(self, auth_headers):
+    def test_delete_very_large_id(self, client, auth_headers):
         """Test deleting with very large ID"""
         very_large_id = 10**12  # 1 trillion
-        response = requests.delete(
-            f"{BASE_URL}/expenses/{very_large_id}",
+        response = client.delete(
+            f"/expenses/{very_large_id}",
             headers=auth_headers
         )
         assert response.status_code == 404
