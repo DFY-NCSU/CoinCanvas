@@ -267,7 +267,7 @@ class TestCreateExpense:
             "category": "Food",
             "amount": 30.00,
             "payment_method": "Debit Card",
-            "description": "Cena en restaurante - 晚餐"
+            "description": "Cena en restaurante - dinner"
         }
         response = client.post("/expenses/", json=expense, headers=auth_headers)
         assert response.status_code == 200
