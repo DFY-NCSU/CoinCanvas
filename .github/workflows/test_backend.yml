@@ -27,13 +27,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
           pip install pytest-cov
-      - name: Start the server
-        run: |
-          uvicorn backend.app.main:app --reload &
+      # - name: Start the server
+      #   run: |
+      #     uvicorn backend.app.main:app --reload &
       - name: Run tests and generate coverage
         # continue-on-error: true  # This allows the workflow to continue even if tests fail
         run: |
-          pytest backend/tests --cov --cov-report=xml
+          cd backend
+          pytest tests --cov=app --disable-warnings --cov-report=xml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         # if: always()  # This ensures coverage is uploaded regardless of test results
