@@ -147,6 +147,13 @@ def create_group_expense(db: Session, group_id: int, expense: schemas.GroupExpen
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
 
+    is_member = db.query(models.GroupMember).filter(
+        models.GroupMember.group_id == group.id,
+        models.GroupMember.user_id == paid_by
+    ).first()
+    if not is_member:
+        raise HTTPException(status_code=403, detail="Not a member of this group")
+
     db_expense = models.GroupExpense(
         group_id=group.id,
         paid_by=paid_by,
@@ -199,6 +206,17 @@ def get_group_expenses(
     skip: int = 0,
     limit: int = 100
 ):
+    # Validate skip and limit parameters
+    if skip < 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Skip value cannot be negative"
+        )
+    if limit < 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Limit value cannot be negative"
+        )
     group = db.query(models.Group).filter(models.Group.id == group_id).first()
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
