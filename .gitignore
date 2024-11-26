@@ -64,3 +64,6 @@ Thumbs.db
 # Docker
 .docker/
 *.env
+
+# Pytest
+.coverage
