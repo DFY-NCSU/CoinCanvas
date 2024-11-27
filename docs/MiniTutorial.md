@@ -78,9 +78,10 @@ The application should now open in a Chrome window. If you encounter any errors,
 ### 3. Database Setup
 
 #### Demo Database
-1. Download the demo database from the provided Google Drive link
+1. Download the demo database from the provided [Google Drive link](https://drive.google.com/file/d/1tA9uxEWfziiNkTtT1AWyrvG4DrXnj3Te/view?usp=sharing)
 2. Place the database file in the project root folder
 3. The backend will automatically connect to this database
+4. Use `email=email@test.com` and `password=pass123` to login.
 
 ## Testing the Application
 
