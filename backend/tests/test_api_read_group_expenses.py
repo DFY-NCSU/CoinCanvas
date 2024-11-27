@@ -319,6 +319,45 @@ class TestGetGroupExpenses:
         )
         assert response.status_code == 401
 
+    def test_get_expenses_invalid_auth_header(self, client, group_with_expenses):
+        """Test retrieving expenses with an invalid authorization header"""
+        headers = {
+            "Authorization": "Bearer invalid.token",
+            "Content-Type": "application/json"
+        }
+        response = client.get(
+            f"/groups/{group_with_expenses['id']}/expenses/",
+            headers=headers
+        )
+        assert response.status_code == 401  # 修改期望值为 401
+
+    def test_get_expenses_partial_data(self, client, auth_headers_list, group_with_expenses):
+        """Test retrieving group expenses with partially populated data"""
+        client.post(
+            f"/groups/{group_with_expenses['id']}/expenses/",
+            headers=auth_headers_list[0],
+            json={
+                "amount": 100,
+                "category": "Miscellaneous",
+                "description": None,  # description 字段为空
+                "date": "2024-11-01",
+                "paid_by": auth_headers_list[0],
+            },
+        )
+
+        response = client.get(
+            f"/groups/{group_with_expenses['id']}/expenses/",
+            headers=auth_headers_list[0]
+        )
+        assert response.status_code == 200
+
+        data = response.json()
+        for expense in data:
+            assert "id" in expense
+            assert "amount" in expense
+            assert "category" in expense
+            assert "description" in expense or expense["description"] is None
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--disable-warnings"])
