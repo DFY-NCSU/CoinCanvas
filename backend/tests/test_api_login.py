@@ -212,6 +212,123 @@ class TestLogin:
         # Check token type
         assert data["token_type"].lower() == "bearer"
 
+    def test_user_creation_existing_email(self, client, test_user):
+        """Test creating a user with an email that already exists"""
+        response = client.post("/users/", json=test_user)
+        assert response.status_code == 400
+        assert "email already registered" in response.json()["detail"].lower()
+
+    def test_token_with_special_characters_username(self, client, test_user):
+        """Test token generation with a username containing special characters"""
+        response = client.post(
+            "/token",
+            data={
+                "username": "user+test@example.com",
+                "password": test_user["password"],
+                "grant_type": "password"
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        assert response.status_code == 401
+
+    def test_token_with_incorrect_grant_type_case(self, client, test_user):
+        """Test token generation with grant type in different casing"""
+        response = client.post(
+            "/token",
+            data={
+                "username": test_user["email"],
+                "password": test_user["password"],
+                "grant_type": "PASSWORD"  # Uppercase grant type
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        assert response.status_code == 422
+
+    def test_token_with_extra_parameters(self, client, test_user):
+        """Test token generation with additional unexpected parameters"""
+        response = client.post(
+            "/token",
+            data={
+                "username": test_user["email"],
+                "password": test_user["password"],
+                "grant_type": "password",
+                "extra_param": "unexpected_value"
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        assert response.status_code in (200, 400)
+
+    def test_token_without_content_type(self, client, test_user):
+        """Test token generation without specifying Content-Type header"""
+        response = client.post(
+            "/token",
+            data={
+                "username": test_user["email"],
+                "password": test_user["password"],
+                "grant_type": "password"
+            }
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert "access_token" in data
+
+    def test_token_with_long_username(self, client):
+        """Test token generation with an excessively long username"""
+        long_username = "a" * 256 + "@example.com"
+        response = client.post(
+            "/token",
+            data={
+                "username": long_username,
+                "password": "testpassword",
+                "grant_type": "password"
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        assert response.status_code == 401
+
+    def test_token_with_blank_grant_type(self, client, test_user):
+        """Test token generation with a blank grant type"""
+        response = client.post(
+            "/token",
+            data={
+                "username": test_user["email"],
+                "password": test_user["password"],
+                "grant_type": ""
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert "access_token" in data
+
+    def test_token_with_numeric_password(self, client, test_user):
+        """Test token generation with a purely numeric password"""
+        test_user["password"] = "12345678"
+        response = client.post(
+            "/token",
+            data={
+                "username": test_user["email"],
+                "password": test_user["password"],
+                "grant_type": "password"
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        assert response.status_code in (200, 401)
+
+    def test_token_with_missing_grant_type_parameter(self, client, test_user):
+        """Test token generation without the grant type parameter"""
+        response = client.post(
+            "/token",
+            data={
+                "username": test_user["email"],
+                "password": test_user["password"]
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert "access_token" in data
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--disable-warnings"])
