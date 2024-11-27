@@ -329,7 +329,7 @@ class TestGetGroupExpenses:
             f"/groups/{group_with_expenses['id']}/expenses/",
             headers=headers
         )
-        assert response.status_code == 401  
+        assert response.status_code == 401
 
     def test_get_expenses_partial_data(self, client, auth_headers_list, group_with_expenses):
         """Test retrieving group expenses with partially populated data"""
@@ -339,7 +339,7 @@ class TestGetGroupExpenses:
             json={
                 "amount": 100,
                 "category": "Miscellaneous",
-                "description": None, 
+                "description": None,
                 "date": "2024-11-01",
                 "paid_by": auth_headers_list[0],
             },
