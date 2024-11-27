@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from typing import Dict
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 
 from app.main import app
 
@@ -173,7 +173,6 @@ class TestCreateExpense:
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
-
 
 
 if __name__ == "__main__":
