@@ -2,16 +2,17 @@
   <img src="assets/logo.png" alt="Project Logo" width="500">
 </p>
 
+[![DOI](https://zenodo.org/badge/882147579.svg)](https://doi.org/10.5281/zenodo.14027393)
 
 <!-- [![GitHub Release](https://img.shields.io/badge/release-v6.0.11.1-blue)](https://github.com/DFY-NCSU/CoinCanvas) -->
 [![Backend Tests & Coverage](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/test_backend.yml/badge.svg)](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/test_backend.yml)
-[![codecov](https://codecov.io/gh/DFY-NCSU/CoinCanvas/branch/dev/graph/badge.svg?token=Gi5Jh3vn8Q)](https://codecov.io/gh/DFY-NCSU/CoinCanvas/tree/dev)
+[![codecov](https://codecov.io/gh/DFY-NCSU/CoinCanvas/branch/main/graph/badge.svg?token=Gi5Jh3vn8Q)](https://codecov.io/gh/DFY-NCSU/CoinCanvas/tree/main)
 [![Flake8 Lint](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/flake8.yml/badge.svg)](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/flake8.yml)
 [![Syntax Check](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/syntax.yml/badge.svg)](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/syntax.yml)
 [![Python Style Checker](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/style.yml/badge.svg)](https://github.com/DFY-NCSU/CoinCanvas/actions/workflows/style.yml)
 <!-- [![codecov](https://codecov.io/gh/DFY-NCSU/CoinCanvas/branch/main/graph/badge.svg?token=oJrKEnEGwP)](https://codecov.io/gh/DFY-NCSU/CoinCanvas/tree/main) -->
 
-<a href="https://github.com/DFY-NCSU/CoinCanvas/blob/main/LICENSE"><img alt="GitHub license" src="https://img.shields.io/github/license/DFY-NCSU/CoinCanvas"></a>
+<a href="https://github.com/DFY-NCSU/CoinCanvas/blob/main/LICENSE.md"><img alt="GitHub license" src="https://img.shields.io/github/license/DFY-NCSU/CoinCanvas"></a>
 <a href="https://github.com/DFY-NCSU/CoinCanvas/forks"><img alt="GitHub forks" src="https://img.shields.io/github/forks/DFY-NCSU/CoinCanvas"></a>
 <a href="https://github.com/DFY-NCSU/CoinCanvas/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/DFY-NCSU/CoinCanvas"></a>
 <a href="https://github.com/DFY-NCSU/CoinCanvas/issues"><img alt="GitHub issues" src="https://img.shields.io/github/issues/DFY-NCSU/CoinCanvas"></a>
