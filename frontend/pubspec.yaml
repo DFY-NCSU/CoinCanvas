@@ -17,6 +17,7 @@ dependencies:
   fl_chart: ^0.64.0
   provider: ^6.0.5
   shared_preferences: ^2.2.0
+  dart_openai: ^4.0.0
 
 dev_dependencies:
   flutter_test:
