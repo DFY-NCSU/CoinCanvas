@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';  // Fixed import
 import '../models/expense.dart';
+import '../models/group.dart';
+import '../models/group_expense.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -271,4 +273,110 @@ class ApiService {
 
   // Check authentication status
   bool get isAuthenticated => _token != null;
+
+  // Create a new group
+  Future<Group> createGroup(String name) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/groups/'),
+      headers: _headers,
+      body: jsonEncode({'name': name}),
+    );
+
+    if (response.statusCode == 200) {
+      return Group.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to create group: ${response.body}');
+    }
+  }
+
+  // Join a group by ID
+  Future<void> joinGroup(int groupId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/groups/$groupId/join'),
+      headers: _headers,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to join group: ${response.body}');
+    }
+  }
+
+  // Get groups the user is a member of
+  Future<List<Group>> getUserGroups() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/groups/'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      List<dynamic> data = jsonDecode(response.body);
+      return data.map((e) => Group.fromJson(e)).toList();
+    } else {
+      throw Exception('Failed to load groups: ${response.body}');
+    }
+  }
+
+  // Search groups by name
+  Future<List<Group>> searchGroups(String name) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/groups/search/?name=$name'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      List<dynamic> data = jsonDecode(response.body);
+      return data.map((e) => Group.fromJson(e)).toList();
+    } else {
+      throw Exception('Failed to search groups: ${response.body}');
+    }
+  }
+
+  // Get expenses for a group
+  Future<List<GroupExpense>> getGroupExpenses(int groupId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/groups/$groupId/expenses/'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      List<dynamic> data = jsonDecode(response.body);
+      return data.map((e) => GroupExpense.fromJson(e)).toList();
+    } else {
+      throw Exception('Failed to load group expenses: ${response.body}');
+    }
+  }
+
+  // Create a group expense
+  Future<GroupExpense> createGroupExpense(int groupId, GroupExpense expense) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/groups/$groupId/expenses'),
+      headers: _headers,
+      body: jsonEncode({
+        'date': expense.date.toIso8601String(),
+        'category': expense.category,
+        'amount': expense.amount,
+        'description': expense.description,
+        'split_type': expense.splitType,
+        'custom_splits': expense.customSplits,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return GroupExpense.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to create group expense: ${response.body}');
+    }
+  }
+
+  // Delete a group expense
+  Future<void> deleteGroupExpense(int groupId, int expenseId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/groups/$groupId/expenses/$expenseId'),
+      headers: _headers,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete group expense: ${response.body}');
+    }
+  }
 }
