@@ -261,3 +261,62 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 }
+
+class _StatisticsScreenState extends State<StatisticsScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _loadData();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Statistics & Analysis'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Statistics'),
+            Tab(text: 'AI Analysis'),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // First tab - Statistics
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildTimeFrameSelector(),
+                      const SizedBox(height: 24),
+                      _buildPieChart(),
+                      const SizedBox(height: 24),
+                      _buildSummaryCards(),
+                    ],
+                  ),
+                ),
+          
+          // Second tab - AI Chat
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : AIChatWidget(expenses: _expenses),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+}
