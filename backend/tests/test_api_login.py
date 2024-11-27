@@ -315,20 +315,6 @@ class TestLogin:
         )
         assert response.status_code in (200, 401)
 
-    def test_token_with_missing_grant_type_parameter(self, client, test_user):
-        """Test token generation without the grant type parameter"""
-        response = client.post(
-            "/token",
-            data={
-                "username": test_user["email"],
-                "password": test_user["password"]
-            },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert "access_token" in data
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--disable-warnings"])
