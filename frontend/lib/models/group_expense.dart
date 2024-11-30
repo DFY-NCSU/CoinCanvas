@@ -9,6 +9,8 @@ class GroupExpense {
   final String splitType;
   final Map<int, double>? customSplits;
   final List<ExpenseSplit> splits;
+  final double? userSplit;  // Amount for current user
+  final bool? isPaidByUser;
 
   GroupExpense({
     required this.id,
@@ -21,6 +23,8 @@ class GroupExpense {
     required this.splitType,
     this.customSplits,
     required this.splits,
+    this.userSplit,
+    this.isPaidByUser,
   });
 
   factory GroupExpense.fromJson(Map<String, dynamic> json) {
@@ -39,6 +43,8 @@ class GroupExpense {
       splits: (json['splits'] as List<dynamic>)
           .map((e) => ExpenseSplit.fromJson(e))
           .toList(),
+      userSplit: json['user_split']?.toDouble(),
+      isPaidByUser: json['is_paid_by_user'],
     );
   }
 }

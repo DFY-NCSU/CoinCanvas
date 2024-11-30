@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';  // Fixed import
 import '../models/expense.dart';
 import '../models/group.dart';
 import '../models/group_expense.dart';
+import '../models/group_member.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -348,23 +349,39 @@ class ApiService {
 
   // Create a group expense
   Future<GroupExpense> createGroupExpense(int groupId, GroupExpense expense) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/groups/$groupId/expenses'),
-      headers: _headers,
-      body: jsonEncode({
-        'date': expense.date.toIso8601String(),
-        'category': expense.category,
-        'amount': expense.amount,
-        'description': expense.description,
-        'split_type': expense.splitType,
-        'custom_splits': expense.customSplits,
-      }),
-    );
+    try {
+      // Convert customSplits Map<int, double> to a Map<String, double>
+      Map<String, dynamic>? customSplitsJson;
+      if (expense.customSplits != null) {
+        customSplitsJson = expense.customSplits!.map(
+          (key, value) => MapEntry(key.toString(), value),
+        );
+      }
 
-    if (response.statusCode == 200) {
-      return GroupExpense.fromJson(jsonDecode(response.body));
-    } else {
-      throw Exception('Failed to create group expense: ${response.body}');
+      final response = await http.post(
+        Uri.parse('$baseUrl/groups/$groupId/expenses'),
+        headers: _headers,
+        body: jsonEncode({
+          'date': expense.date.toIso8601String(),
+          'category': expense.category,
+          'amount': expense.amount,
+          'description': expense.description,
+          'split_type': expense.splitType,
+          'custom_splits': customSplitsJson,
+        }),
+      );
+
+      print('Create group expense response status: ${response.statusCode}');
+      print('Create group expense response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return GroupExpense.fromJson(jsonDecode(response.body));
+      } else {
+        throw Exception('Failed to create group expense: ${response.body}');
+      }
+    } catch (e) {
+      print('Create group expense error: $e');
+      rethrow;
     }
   }
 
@@ -377,6 +394,33 @@ class ApiService {
 
     if (response.statusCode != 200) {
       throw Exception('Failed to delete group expense: ${response.body}');
+    }
+  }
+
+  Future<List<GroupMember>> getGroupMembers(int groupId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/groups/$groupId/members/'),  // Note the trailing slash
+        headers: _headers,
+      );
+
+      print('Get group members response status: ${response.statusCode}');
+      print('Get group members response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = jsonDecode(response.body);
+        return data.map((e) => GroupMember.fromJson(e)).toList();
+      } else if (response.statusCode == 404) {
+        // Return empty list instead of throwing error if group not found
+        print('Group not found or no members');
+        return [];
+      } else {
+        throw Exception('Failed to load group members: ${response.body}');
+      }
+    } catch (e) {
+      print('Get group members error: $e');
+      // Return empty list on error
+      return [];
     }
   }
 }

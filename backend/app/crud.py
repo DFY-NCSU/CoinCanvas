@@ -281,3 +281,30 @@ def get_user_groups(db: Session, user_id: int, skip: int = 0, limit: int = 100):
         models.GroupMember.user_id == user_id
     ).offset(skip).limit(limit).all()
     return member_groups
+
+
+def get_group_members(db: Session, group_id: int, current_user: models.User):
+    # First check if the group exists
+    group = db.query(models.Group).filter(models.Group.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    # Check if the current user is a member of the group
+    is_member = db.query(models.GroupMember).filter(
+        models.GroupMember.group_id == group_id,
+        models.GroupMember.user_id == current_user.id
+    ).first()
+    
+    if not is_member:
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to view this group's members"
+        )
+
+    # Get all members of the group
+    members = db.query(models.User)\
+        .join(models.GroupMember)\
+        .filter(models.GroupMember.group_id == group_id)\
+        .all()
+
+    return members

@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/group_expense.dart';
+import '../models/group_member.dart';
 import '../services/api_service.dart';
+import '../widgets/custom_split_form.dart';
+
+extension StringExtension on String {
+  String capitalize() {
+    return "${this[0].toUpperCase()}${substring(1)}";
+  }
+}
 
 class AddGroupExpenseScreen extends StatefulWidget {
   final int groupId;
@@ -27,6 +35,9 @@ class _AddGroupExpenseScreenState extends State<AddGroupExpenseScreen> {
   final _descriptionController = TextEditingController();
   String _splitType = 'equal';
   bool _isLoading = false;
+  bool _isLoadingMembers = false;
+  Map<int, double>? _customSplits;
+  List<GroupMember> _groupMembers = [];
 
   final _categories = [
     'Food',
@@ -38,6 +49,28 @@ class _AddGroupExpenseScreenState extends State<AddGroupExpenseScreen> {
     'Education',
     'Other'
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGroupMembers();
+  }
+
+  Future<void> _loadGroupMembers() async {
+    setState(() => _isLoadingMembers = true);
+    try {
+      final members = await _apiService.getGroupMembers(widget.groupId);
+      setState(() {
+        _groupMembers = members;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading group members: $e')),
+      );
+    } finally {
+      setState(() => _isLoadingMembers = false);
+    }
+  }
 
   Future<void> _selectDate(BuildContext context) async {
     final ThemeData theme = Theme.of(context);
@@ -77,30 +110,59 @@ class _AddGroupExpenseScreenState extends State<AddGroupExpenseScreen> {
 
   Future<void> _submitExpense() async {
     if (_formKey.currentState!.validate()) {
+      if (_splitType == 'custom') {
+        if (_groupMembers.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Cannot create custom split with no group members'),
+            ),
+          );
+          return;
+        }
+        
+        if (_customSplits == null ||
+            (_customSplits!.values.fold<double>(0.0, (sum, value) => sum + value) - 100.0).abs() >
+                0.01) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Custom split percentages must sum to 100%'),
+            ),
+          );
+          return;
+        }
+      }
+
       setState(() => _isLoading = true);
 
-      final expense = GroupExpense(
-        id: 0,
-        groupId: widget.groupId,
-        paidBy: 0, // The API will handle this based on the authenticated user
-        date: _selectedDate,
-        category: _selectedCategory!,
-        amount: double.parse(_amountController.text),
-        description: _descriptionController.text,
-        splitType: _splitType,
-        splits: [],
-      );
-
       try {
-        await _apiService.createGroupExpense(widget.groupId, expense);
-        widget.onExpenseAdded();
-        Navigator.pop(context);
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error adding expense: $e')),
+        final expense = GroupExpense(
+          id: 0,
+          groupId: widget.groupId,
+          paidBy: 0,
+          date: _selectedDate,
+          category: _selectedCategory!,
+          amount: double.parse(_amountController.text),
+          description: _descriptionController.text,
+          splitType: _splitType,
+          customSplits: _splitType == 'custom' ? _customSplits : null,
+          splits: [],
         );
+
+        await _apiService.createGroupExpense(widget.groupId, expense);
+        if (mounted) {
+          widget.onExpenseAdded();
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error adding expense: $e')),
+          );
+        }
       } finally {
-        setState(() => _isLoading = false);
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     }
   }
@@ -113,18 +175,41 @@ class _AddGroupExpenseScreenState extends State<AddGroupExpenseScreen> {
   }
 
   Widget _buildSplitTypeSelector() {
-    return DropdownButtonFormField<String>(
-      value: _splitType,
-      decoration: const InputDecoration(
-        labelText: 'Split Type',
-        border: OutlineInputBorder(),
-        prefixIcon: Icon(Icons.group),
-      ),
-      items: ['equal'] // Add other split types if supported
-          .map((type) => DropdownMenuItem(value: type, child: Text(type)))
-          .toList(),
-      onChanged: (value) => setState(() => _splitType = value!),
-      validator: (value) => value == null ? 'Please select a split type' : null,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          value: _splitType,
+          decoration: const InputDecoration(
+            labelText: 'Split Type',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.group),
+          ),
+          items: ['equal', 'custom']
+              .map((type) => DropdownMenuItem(
+                    value: type,
+                    child: Text(type.capitalize()),
+                  ))
+              .toList(),
+          onChanged: (value) => setState(() => _splitType = value!),
+          validator: (value) => value == null ? 'Please select a split type' : null,
+        ),
+        if (_splitType == 'custom') ...[
+          const SizedBox(height: 16),
+          const Text(
+            'Custom Split Percentages',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          if (_isLoadingMembers)
+            const Center(child: CircularProgressIndicator())
+          else
+            CustomSplitForm(
+              members: _groupMembers,
+              onSplitsChanged: (splits) => _customSplits = splits,
+            ),
+        ],
+      ],
     );
   }
 

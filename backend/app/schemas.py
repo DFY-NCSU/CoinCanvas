@@ -108,3 +108,15 @@ class Group(GroupBase):
 
     class Config:
         from_attributes = True  # Updated from orm_mode
+
+
+class GroupMemberBase(BaseModel):
+    id: int
+    full_name: str
+    email: str
+
+    class Config:
+        from_attributes = True
+
+class GroupMember(GroupMemberBase):
+    joined_at: datetime

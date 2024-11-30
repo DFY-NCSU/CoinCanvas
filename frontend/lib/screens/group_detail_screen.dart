@@ -85,11 +85,82 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
           onDismissed: (direction) => _deleteExpense(expense.id),
           child: ListTile(
             title: Text(expense.category),
-            subtitle: Text(expense.description),
-            trailing: Text('\$${expense.amount.toStringAsFixed(2)}'),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(expense.description),
+                const SizedBox(height: 4),
+                Text(
+                  'Your share: \$${expense.userSplit?.toStringAsFixed(2) ?? "0.00"}',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.secondary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '\$${expense.amount.toStringAsFixed(2)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  expense.splitType,
+                  style: TextStyle(
+                    color: Theme.of(context).textTheme.bodySmall?.color,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+            onTap: () => _showExpenseDetails(expense),
           ),
         );
       },
+    );
+  }
+
+  void _showExpenseDetails(GroupExpense expense) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Expense Details',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Text('Category: ${expense.category}'),
+            Text('Description: ${expense.description}'),
+            Text('Amount: \$${expense.amount.toStringAsFixed(2)}'),
+            Text('Split Type: ${expense.splitType}'),
+            const SizedBox(height: 8),
+            const Text(
+              'Splits:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            ...expense.splits.map(
+              (split) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('User ${split.userId}'),
+                    Text('\$${split.amount.toStringAsFixed(2)}'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

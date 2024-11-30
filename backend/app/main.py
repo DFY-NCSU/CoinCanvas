@@ -214,6 +214,16 @@ def search_groups(
     ).offset(skip).limit(limit).all()
 
 
+@app.get("/groups/{group_id}/members/", response_model=List[schemas.GroupMemberBase])
+def get_group_members(
+    group_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Get all members of a specific group"""
+    return crud.get_group_members(db, group_id=group_id, current_user=current_user)
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
