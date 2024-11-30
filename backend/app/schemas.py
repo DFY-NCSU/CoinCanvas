@@ -118,5 +118,6 @@ class GroupMemberBase(BaseModel):
     class Config:
         from_attributes = True
 
+
 class GroupMember(GroupMemberBase):
     joined_at: datetime

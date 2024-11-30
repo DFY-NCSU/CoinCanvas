@@ -294,7 +294,7 @@ def get_group_members(db: Session, group_id: int, current_user: models.User):
         models.GroupMember.group_id == group_id,
         models.GroupMember.user_id == current_user.id
     ).first()
-    
+
     if not is_member:
         raise HTTPException(
             status_code=403,
