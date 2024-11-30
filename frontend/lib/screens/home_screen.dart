@@ -5,6 +5,7 @@ import '../screens/login_screen.dart';
 import '../screens/statistics_screen.dart';
 import '../services/api_service.dart';
 import 'package:intl/intl.dart';
+import 'group_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -270,6 +271,16 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.logout),
             onPressed: _handleLogout,
             tooltip: 'Logout',
+          ),
+          IconButton(
+            icon: const Icon(Icons.group),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const GroupListScreen()),
+              );
+            },
+            tooltip: 'Groups',
           ),
         ],
       ),

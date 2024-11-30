@@ -12,6 +12,7 @@ class User(Base):
     hashed_password = Column(String)
     full_name = Column(String)
     expenses = relationship("Expense", back_populates="owner")
+    group_memberships = relationship("GroupMember", back_populates="user")
 
 
 # Common base class for expense attributes
@@ -54,7 +55,7 @@ class GroupMember(Base):
     group_id = Column(Integer, ForeignKey("groups.id"))
     joined_at = Column(DateTime, default=datetime.utcnow)
 
-    user = relationship("User")
+    user = relationship("User", back_populates="group_memberships")
     group = relationship("Group", back_populates="members")
 
 
