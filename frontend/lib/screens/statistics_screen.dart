@@ -3,12 +3,13 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../models/expense.dart';
 import '../services/api_service.dart';
+import '../widgets/ai_chat_widget.dart';
 
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({Key? key}) : super(key: key);
 
   @override
-  _StatisticsScreenState createState() => _StatisticsScreenState();
+  State<StatisticsScreen> createState() => _StatisticsScreenState();
 }
 
 class _StatisticsScreenState extends State<StatisticsScreen> {
@@ -233,31 +234,47 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Statistics'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildTimeFrameSelector(),
-                  const SizedBox(height: 24),
-                  _buildPieChart(),
-                  const SizedBox(height: 24),
-                  _buildSummaryCards(),
-                ],
-              ),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Statistics'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _loadData,
             ),
+          ],
+          bottom: const TabBar(
+            tabs: [
+              Tab(icon: Icon(Icons.pie_chart), text: 'Statistics'),
+              Tab(icon: Icon(Icons.chat), text: 'AI Assistant'),
+            ],
+          ),
+        ),
+        body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : TabBarView(
+              children: [
+                // Statistics Tab
+                SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildTimeFrameSelector(),
+                      const SizedBox(height: 24),
+                      _buildPieChart(),
+                      const SizedBox(height: 24),
+                      _buildSummaryCards(),
+                    ],
+                  ),
+                ),
+                // AI Assistant Tab
+                AIChatWidget(expenses: _expenses),
+              ],
+            ),
+      ),
     );
   }
 }

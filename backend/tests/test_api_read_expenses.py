@@ -186,6 +186,80 @@ class TestReadExpense:
         second_page_ids = {expense["id"] for expense in second_page}
         assert not first_page_ids.intersection(second_page_ids)
 
+    def test_read_expenses_default_sorting(self, client, auth_headers, create_test_expenses):
+        """Test reading expenses with default sorting (by creation date ascending)"""
+        response = client.get("/expenses/", headers=auth_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        for i in range(len(data) - 1):
+            assert data[i]["created_at"] <= data[i + 1]["created_at"]
+
+    def test_read_expenses_descending_sort(self, client, auth_headers, create_test_expenses):
+        """Test reading expenses with descending sorting by creation date"""
+        response = client.get("/expenses/?sort=-created_at", headers=auth_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        for i in range(len(data) - 1):
+            assert data[i]["created_at"] >= data[i + 1]["created_at"]
+
+    def test_read_expenses_with_search(self, client, auth_headers, create_test_expenses):
+        """Test reading expenses with a search query"""
+        search_query = "office"
+        response = client.get(f"/expenses/?search={search_query}", headers=auth_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        for expense in data:
+            assert search_query.lower() in expense["description"].lower()
+
+    def test_read_expenses_filter_by_date_range(self, client, auth_headers, create_test_expenses):
+        """Test reading expenses filtered by a date range"""
+        start_date = "2024-01-01"
+        end_date = "2024-01-31"
+        response = client.get(f"/expenses/?start_date={start_date}&end_date={end_date}", headers=auth_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        for expense in data:
+            assert start_date <= expense["created_at"] <= end_date
+
+    def test_read_expenses_with_empty_database(self, client, auth_headers):
+        """Test reading expenses when no expenses exist"""
+        response = client.get("/expenses/", headers=auth_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 0
+
+    def test_read_expenses_combined_filters(self, client, auth_headers, create_test_expenses):
+        """Test reading expenses with combined filters (search and limit)"""
+        search_query = "travel"
+        limit = 3
+        response = client.get(f"/expenses/?search={search_query}&limit={limit}", headers=auth_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) <= limit
+        for expense in data:
+            assert search_query.lower() in expense["description"].lower()
+
+    def test_read_expenses_pagination_and_date_filter(self, client, auth_headers, create_test_expenses):
+        """Test reading expenses with pagination and date filtering"""
+        skip = 2
+        limit = 5
+        start_date = "2024-01-01"
+        end_date = "2024-12-31"
+        response = client.get(f"/expenses/?skip={skip}&limit={limit}&start_date={start_date}&end_date={end_date}",
+                              headers=auth_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) <= limit
+        for expense in data:
+            assert start_date <= expense["created_at"] <= end_date
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--disable-warnings"])
